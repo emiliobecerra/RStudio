@@ -1,0 +1,148 @@
+---
+title: "HW2 R Markdown Solutions"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 4.0: Regression in R
+
+
+## 4.1: 
+Import the data (NLSY79data.out) into R using the read.table() command [you can leave the sep= portion of the command blank as it is separated by white space which is the default]
+
+## ANS:
+```{r}
+data=read.table(file="/Users/devongorry/Google Drive/Teaching/EconomicAnalytics/Homework/HW Data/NLSY79data.out"
+                , header=TRUE)
+```
+## 4.2: 
+Use the summary command to look at the variables available to you.  
+
+## ANS:
+Look at data with summary()
+```{r}
+summary(data)
+```
+
+## 4.3:
+The NLSY79 represents missing data with negative numbers.  In most cases, I cleaned the data for you and all missing values are represented by "NA's".  However, afqt1 has not been cleaned.  Instead of "NA's", it's missing data is still represented by negative numbers (any number less than zero represents missing data in afqt1)  Using the ifelse() function, replace the missing data in afqt1 with "NA".  Type ?ifelse into R to see how to use this function.  After "cleaning" afqt1, summarize the data.  How many "NA's" do you have in afqt1?
+
+## ANS:
+808 NAs
+```{r}
+#see how to use ifelse()
+?ifelse
+#replace negative numbers in afqt1 with NA's
+data$afqt1=ifelse(data$afqt1<0, NA, data$afqt1)
+#summarize the "cleaned" data
+summary(data)
+```
+
+## 4.4:
+We want to get rid of data with missing values (we are assuming that they are missing at random).  We can do this by omitting observations with "NAs" using the following command datanew=na.omit(dataold), where datanew is the name of your new dataset that will have no "NA's" and dataold is the name of your old dataset with missing values. Please remove your missing data
+
+## ANS:
+```{r}
+data2=na.omit(data)
+summary(data2)
+```
+## 4.5: 
+For now, we want to look at male workers who claim to be employed, who worked at least 40 weeks out of the year, and who worked at least 1500 hours last year.  Create a new dataset that only contains these workers.
+
+## ANS:
+```{r}
+#keep data for males who claim to be employed, work at least 40 weeks a year, 
+#and work at least 1500 hours a year 
+newdata=data2[data2$sex==1&data2$empstatusc==1&data2$wkswk1990>=40&data2$hrswk>=1500,]
+```
+
+## 4.6: 
+Let's see how many observations we have!  Each row is one observation.  Use the nrow() function to see how many observations are in the dataset you created above.  Hopefully the answer is 3169.
+
+## ANS:
+```{r}
+#see how many observations we have 
+#(3132 with strict inequality in the command above, 3169 otherwise)
+nrow(newdata)
+```
+## 4.7: 
+Create a summary table of the data.  In this summary table, we just want income, highest year of schooling completed, and afqt score.  In addition, we want this table to have number of observations, the mean, standard deviation, min, and max of the data (with no other summary measures).
+
+## ANS:
+```{r, results='asis'}
+#Get a summary table of data with income1990, hgcomp, and afqt1
+##just want number of obs, mean, sd, min, and max
+library(stargazer)
+stargazer(subset(newdata, select=c(income1990, hgcomp, afqt1)), 
+          summary.stat=c("n","mean", "sd", "min", "max"),header=FALSE, type='latex')
+```
+
+
+## 4.8: 
+Let's assume that the population model between income and education is:
+$$Income=\beta_0+\beta_1Education+u$$
+Estimate the simple linear regression above. What values do you get for $\hat\beta_0$ and $\hat\beta_1$?  Interpret the meaning of these coefficients.
+
+## ANS:
+```{r}
+#run regression and look at coefficients
+myreg=lm(income1990~hgcomp, data=newdata)
+myreg
+```
+$\hat\beta_0=-829.1$ which is interpreted as the income of somebody who has no education.   This number does not really mean anything because there are no people with an education of zero in the data and a negative income doesn't make sense.
+$\hat\beta_1=1964.1$ which is interpreted as the change in income associated with 1 additional year of schooling. (We should not make a causal interpretation here because we shouldn't really believe all of our assumptions hold)
+
+## 4.9: 
+Since we do not believe that education affects income linearly, let's assume the population model between income and education is:
+$$ln(Income)=\beta_0+\beta_1Education+u$$
+Estimate this model.  What values do you get for $\hat\beta_0$ and $\hat\beta_1$?  Interpret the meaning of $\hat\beta_1$.
+
+## ANS:
+```{r}
+#Create new variable that is log of income and rerun regression with ln(income) on LHS.
+newdata$lnincome=log(newdata$income)
+myreg2=lm(lnincome~hgcomp, data=newdata)
+myreg2
+```
+$\hat\beta_0=8.91$
+$\hat\beta_1=0.08$  Thus, a 1 year increase in education is associated with an 8 percent increase in income\\
+
+## 4.10: 
+We decide that the log of hourly wage is probably a better left hand side variable and want to estimate
+$$ln(wage/hr)=\beta_0+\beta_1Education+u$$
+Estimate this model.  What values do you get for $\hat\beta_0$ and $\hat\beta_1$?  Interpret the meaning of $\hat\beta1$
+
+## ANS:
+```{r}
+#Create new variable that is log of hourly wages and rerun regression with ln(hrwage) on LHS.
+newdata$lnhrwage=log(newdata$income/newdata$hrswk)
+myreg3=lm(lnhrwage~hgcomp, data=newdata)
+myreg3
+```
+$\beta_0=1.23$
+$\beta_1=0.0747$  Thus, a 1 year increase in education is associated with a 7.47 percent increase in hourly wages
+
+## 4.11: 
+What condition(s) must hold in order to interpret our estimates as "causal" effects?  Do you think the condition(s) hold?  Why or why not?
+
+## ANS:
+Assuming we have a linear model, random sample, and variation in education, the two key conditions that must hold are $E(u)=0$ and $E(u|x)=E(u)$.  The first condition is easy to satisfy as the intercept term can adjust to make this true.  The second assumption implies that education is not correlated with anything else that affects wage which is left out of the equation (and is thus in $u$).  For example, we left out a measure of ability that would affect wages and thus ability is in our $u$.  This condition implies that education levels are not correlated with a measure of people's "ability".  It is unlikely that this is true, thus I don't think the condition holds. 
+
+## 4.12: 
+Choose one of the regressions above.  Plot the data and the corresponding regression line.
+
+## ANS:
+```{r}
+plot(newdata$hgcomp, newdata$lnhrwage, main="log wage and high grade completed",
+     xlab="schooling (highest grade)", ylab="ln(wage)")
+abline(myreg3, col="red")
+```
+
+## 4.13: 
+Optional!! (not part of grade)  If you haven't had enough fun with R, try looking at the data.  What does a histogram of wages look like?  Plot your regression lines through the data.  Perhaps try to install the 3d package.  Still can't get enough??  Check to see if women's wages follow the same patterns we found for men.  Check to see if race influences wages.  Ages vary by about 7 years... do these age differences matter?
+
+

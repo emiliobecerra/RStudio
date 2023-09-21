@@ -1,0 +1,116 @@
+---
+title: "HW3 Solutions"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 4.0: Variance Visualization in R
+Open the BetaVariance.R file that has been posted in the class files on canvas and follow along with the code to make sure you understand the simulation. The code first demonstrates that when there is a higher variance of u, then the resulting variance of our estimators increases. Next the code demonstrates that a larger sample size leads to a smaller variance of our estimator. You will now demonstrate how variance changes as the range of x’s change.
+
+## 4.1: 
+Generate your own R script and recreate the code which creates ice cream consumption/happiness data with consumption varying from 0 to 10 and a low variance of u, estimates 1000 betas, and plots the results of β1. (this could be as simple as copy and paste... but make sure you understand all the steps!)
+
+## ANS:
+
+Type in your answer
+```{r}
+u <- rnorm(1000,0,2)
+I <- seq()
+I <- seq(.01,10,.01)
+H = 10+5*I+u
+mydata<-data.frame(I,H)
+
+betas<-data.frame(beta0=numeric(1000),beta1=numeric(1000))
+for(i in 1:1000){
+	betas[i,]=lm(H~I, data=mydata[sample(1:nrow(mydata),30),])$coefficients
+}
+hist(betas$beta1,15, freq=FALSE, main="Histogram of Beta1 (n=10) (sd(u)=2)", xlab="Beta1", ylab="Density", col="orange")
+
+```
+
+## 4.2: 
+Now generate a new ice cream/happiness dataset where ice cream consumption varies from
+0 to 20. Thus, I2=seq(.02,20,.02), u remains the same, and Happiness follows the same
+population model so that H2=10+5*I2+u.  
+
+## ANS:
+
+```{r}
+u <- rnorm(1000,0,2)
+I2 <- seq()
+I2 <- seq(.02,20,.02)
+H2 = 10+5*I2+u
+mydata2<-data.frame(I,H)
+
+newbetas<-data.frame(newbeta0=numeric(1000),newbeta1=numeric(1000))
+for(i in 1:1000){
+	newbetas[i,]=lm(H2~I2, data=mydata[sample(1:nrow(mydata),30),])$coefficients
+}
+
+```
+
+## 4.3:
+(Answer this before running another simulation) If you run the simulation with your new icecream data, how would a histogram of β1 compare with the histogram in 4.1. Why?
+
+## ANS:
+I suspect the new histogram will look very similar to the old one. The mean will still be centered around 5.0. There will still be outliers, and they will be more extreme. What could change would be the minimum and maximum for the observations exlcuding the outliers. I predict that that range will be tighter, ie, more accurate to 5.0.
+```{r}
+
+```
+
+## 4.4:
+Now run the simulation with the new data. That is, repeat the generation of 1000 betas with the new data and plot the results for β1 (you do not need to plot β0). Compare your results to the histogram you replicated in 4.1. (no need to revise your answer to 4.3...)
+
+## ANS:
+The mean is still the same. The same amount of outliers exist. However, what is different is the X-Axis. More observations center around 5.0. And, the range is more or less the same. 
+```{r}
+hist(newbetas$newbeta1,15, freq=FALSE, main="New Histogram of Beta1 (n=20) (sd(u)=2)", xlab="Beta1", ylab="Density", col="purple")
+
+```
+
+
+## 5.0: Multivariate Regression in R
+Use the CCrime.R data to investigate crime on college campuses. Here, you are given enrol=total student enrollment, police=number of campus officers, and crime=number of crimes.
+
+## 5.1:
+Load the crime data and take a look at the variables (maybe even look at a plot or histogram of some of the variables – you do not need to print any of these plots/histograms out).
+
+## ANS:
+```{r}
+load("~/downloads/CCrime.R")
+View(CCrime)
+```
+## 5.2: 
+Estimate the following multivariate regression model: log(crime) = β0 + β1log(enrol) +
+β2police+u. What value do you get for β1? Interpret this coefficient. What value do you get for β2? Interpret this coefficient.
+
+## ANS:
+```{r}
+CCrime$lncrime=log(CCrime$crime)
+CCrime$lnenrol=log(CCrime$enrol)
+
+myreg <- lm(lncrime~lnenrol + police, data=CCrime)
+```
+β1 = 0.977 ; Each 1% increase in student enrollment is associated with a 0.977% increase in crime on college
+campuses.
+β2 = 0.024 ; Each additional campus officer is associated with a 2.4% increase in crime on college campuses
+
+## 5.3: 
+Based on the results above, do you think that police are leading to more crime?
+
+No. We can't think of this being causal. The Gauss Markov assumptions fail to hold. The zero conditional mean assumption in particular. 
+## ANS:
+```{r}
+install.packages("scatterplot3d")
+library(scatterplot3d)
+s3d<-scatterplot3d(CCrime$lncrime,CCrime$lnenrol,CCrime$police, pch=15,type="p",
+main="3D Scatterplot", xlab="log(College Crime)",
+ylab="log(Student Enrollment)", zlab="Number of Campus Officers")
+myreg <- lm(lncrime~lnenrol + police, data=CCrime)
+summary(myreg)
+```
+
